@@ -1,0 +1,61 @@
+---
+- name: Configure Cumulus Linux Switches
+  hosts: all
+  become: true
+  tasks:
+
+    # 1. Configure Loopback Interface
+    - name: Configure loopback interface
+      ansible.netcommon.ncli:
+        command: >
+          nv set interface lo ip address {{ loopback_ip }}
+          nv set interface lo description "Loopback interface for {{ inventory_hostname }}"
+          nv config apply
+
+    # 2. Configure Physical Interfaces
+    - name: Configure physical interfaces
+      ansible.netcommon.ncli:
+        command: >
+          nv set interface {{ item.interface }} ip address {{ item.ip }}
+          nv set interface {{ item.interface }} description "{{ item.description }}"
+          nv config apply
+      with_items: "{{ physical_interfaces }}"
+
+    # 3. Configure BGP
+    - name: Configure BGP
+      ansible.netcommon.ncli:
+        command: >
+          nv set routing bgp autonomous-system {{ bgp_as }}
+          nv set routing bgp router-id {{ router_id }}
+          nv set routing bgp neighbor {{ item.neighbor_ip }} remote-as {{ item.remote_as }}
+          nv config apply
+      with_items: "{{ bgp_neighbors }}"
+
+    - name: Configure BGP networks
+      ansible.netcommon.ncli:
+        command: >
+          nv set routing bgp network {{ item }}
+          nv config apply
+      with_items: "{{ bgp_networks }}"
+
+    # 4. Configure VXLAN with EVPN
+    - name: Configure VXLAN interface
+      ansible.netcommon.ncli:
+        command: >
+          nv set interface vxlan1 vxlan id {{ vxlan_id }}
+          nv set interface vxlan1 bridge access
+          nv set interface vxlan1 source-ip lo
+          nv set routing evpn vni {{ vxlan_id }} route-distinguisher {{ evpn_rd }}
+          nv set routing evpn vni {{ vxlan_id }} route-target import {{ evpn_rt }}
+          nv set routing evpn vni {{ vxlan_id }} route-target export {{ evpn_rt }}
+          nv config apply
+
+    # 5. Configure MLAG (Core or Edge switches)
+    - name: Configure MLAG
+      ansible.netcommon.ncli:
+        command: >
+          nv set mlag domain {{ mlag_domain }} peerlink bridge
+          nv set mlag domain {{ mlag_domain }} peer-address {{ mlag_peer_address }}
+          nv set mlag domain {{ mlag_domain }} local-address {{ mlag_local_address }}
+          nv config apply
+
