@@ -1,0 +1,32 @@
+loopback_ip: "10.1.255.1"
+
+physical_interfaces:
+  - interface: "swp1"
+    ip: "10.1.0.1/30"
+    description: "Link to core2"
+  - interface: "swp2"
+    ip: "10.1.1.1/30"
+    description: "Link to edge1"
+  - interface: "swp3"
+    ip: "10.1.1.5/30"
+    description: "Link to edge2"
+
+bgp_as: 65000
+router_id: "10.1.255.1"
+
+bgp_neighbors:
+  - neighbor_ip: "10.1.1.2"
+    remote_as: 65001
+  - neighbor_ip: "10.1.1.6"
+    remote_as: 65002
+
+bgp_networks:
+  - "10.1.255.0/24"
+
+vxlan_id: 1001
+evpn_rd: "10.1.255.1:1001"
+evpn_rt: "65000:1001"
+
+mlag_domain: "core"
+mlag_peer_address: "10.1.255.2"
+mlag_local_address: "10.1.255.1"
